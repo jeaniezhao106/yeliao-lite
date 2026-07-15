@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <!--
-  夜聊 Lite v0.2
+  夜聊 Lite v0.5
   本地优先的自用 AI 聊天界面
 
   使用说明：
   1. 直接用浏览器打开本文件即可运行，无需安装依赖或启动服务。
-  2. 首次使用请点击右上角“设置”，填入自己的 DeepSeek API Key 并保存。
+  2. 首次使用请点击右上角“设置”，填入自己的 API Key 并保存。
   3. API Key 只保存在本机浏览器 localStorage 中，请不要把填好 Key 的浏览器环境借给他人使用。
   4. 输入消息后点击发送，或在输入框里按 Enter 发送；Shift + Enter 换行。
-  5. 支持多会话、会话搜索、消息复制/删除/重新生成、代码块复制、HTML iframe 预览。
-  6. 支持 Markdown 渲染、代码高亮、深浅主题、系统提示词、参数预设和上下文长度控制。
+  5. 支持多会话、会话搜索、会话级模型记忆、消息复制/删除/重新生成、代码块复制、HTML iframe 预览。
+  6. 支持 Markdown 渲染、代码高亮、深浅主题、角色模式卡片、联网轻量搜索（实验）、系统提示词、参数预设和上下文长度控制。
   7. 支持当前对话 Markdown 导出、全部会话 JSON 备份导入/导出；备份不包含 API Key。
   8. 后续如需接入 MCP / 本地工具服务，可从脚本里的 ToolBridge 模块继续扩展。
 -->
@@ -549,9 +549,33 @@
       background: var(--panel);
     }
 
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 960px;
+      margin: 0 auto 10px;
+    }
+
+    .quick-prompt-button {
+      min-height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .quick-prompt-button:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
     .composer-inner {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto auto auto;
       gap: 10px;
       max-width: 960px;
       margin: 0 auto;
@@ -577,7 +601,8 @@
     }
 
     .send-button,
-    .stop-button {
+    .stop-button,
+    .web-search-toggle {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -588,6 +613,43 @@
       background: var(--accent);
       color: #07120e;
       font-weight: 800;
+    }
+
+    .web-search-toggle {
+      gap: 6px;
+      border: 1px solid var(--border);
+      background: var(--panel-soft);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .web-search-toggle.active {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 18%, var(--panel-soft));
+      color: var(--accent);
+    }
+
+    .web-search-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .provider-switch {
+      min-width: 118px;
+      min-height: 52px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      color: var(--text);
+      font-weight: 700;
+      outline: none;
+    }
+
+    .provider-switch:focus {
+      border-color: var(--accent);
     }
 
     .stop-button {
@@ -676,6 +738,46 @@
       line-height: 1.5;
     }
 
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .role-card {
+      display: grid;
+      gap: 5px;
+      min-height: 86px;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .role-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .role-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    .role-card strong {
+      font-size: 13px;
+    }
+
+    .role-card span {
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     .text-input,
     .select-input,
     .textarea-input {
@@ -707,6 +809,50 @@
       gap: 12px;
     }
 
+    .release-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+    }
+
+    .release-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .release-version {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .release-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      color: var(--text-muted);
+      font-size: 12px;
+      line-height: 1.45;
+      list-style: none;
+    }
+
+    .release-list li {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+
     .secondary-button,
     .primary-button,
     .danger-button {
@@ -730,6 +876,10 @@
     .danger-button {
       background: transparent;
       color: var(--danger);
+    }
+
+    .connection-test-status {
+      min-height: 20px;
     }
 
     .toast {
@@ -821,6 +971,10 @@
       .two-col {
         grid-template-columns: 1fr;
       }
+
+      .role-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -855,12 +1009,18 @@
       <section class="messages" id="messages" aria-live="polite"></section>
 
       <footer class="composer">
+        <div class="quick-prompts" id="quickPrompts" aria-label="快捷提示词"></div>
         <div class="composer-inner">
           <textarea class="input-box" id="promptInput" rows="2" placeholder="输入消息，Enter 发送，Shift + Enter 换行"></textarea>
+          <select class="provider-switch" id="providerSwitch" title="切换模型服务商" aria-label="切换模型服务商"></select>
+          <label class="web-search-toggle" id="webSearchToggle" title="联网轻量搜索">
+            <input id="webSearchInput" type="checkbox">
+            <span>联网</span>
+          </label>
           <button class="stop-button" id="stopButton" type="button">停止</button>
           <button class="send-button" id="sendButton" type="button">发送</button>
         </div>
-        <div class="hint">Enter 发送，Shift + Enter 换行。建议第一次发送前先保存 API Key。</div>
+        <div class="hint">Enter 发送，Shift + Enter 换行。联网模式会把本次问题发送到无 Key 搜索接口获取摘要。</div>
       </footer>
     </main>
   </div>
@@ -874,9 +1034,27 @@
       </div>
       <form class="settings-form" id="settingsForm">
         <div class="field">
-          <label for="apiKeyInput">DeepSeek API Key</label>
+          <label for="apiKeyInput">API Key</label>
           <input class="text-input" id="apiKeyInput" type="password" autocomplete="off" placeholder="sk-...">
-          <small>只保存在本机 localStorage。发送消息时仅用于请求 DeepSeek API。</small>
+          <small>只保存在本机 localStorage。发送消息时仅用于请求你配置的模型接口。</small>
+          <button class="secondary-button" id="testConnectionButton" type="button">测试当前模型连接</button>
+          <small class="connection-test-status" id="connectionTestStatus">会用当前表单里的接口、模型和 API Key 发送一句极短测试消息。</small>
+        </div>
+
+        <div class="field">
+          <label for="providerInput">服务商预设</label>
+          <select class="select-input" id="providerInput">
+            <option value="deepseek">DeepSeek</option>
+            <option value="qwen">通义千问</option>
+            <option value="custom">自定义接口</option>
+          </select>
+          <small>选择预设会自动填写接口地址和模型名；API Key 仍需你自己填写。</small>
+        </div>
+
+        <div class="field">
+          <label for="apiEndpointInput">OpenAI 兼容接口地址</label>
+          <input class="text-input" id="apiEndpointInput" type="url" value="https://api.deepseek.com/v1/chat/completions">
+          <small>默认是 DeepSeek。后续可改成其他支持 /chat/completions 的国内模型服务。</small>
         </div>
 
         <div class="two-col">
@@ -922,6 +1100,34 @@
         </div>
 
         <div class="field">
+          <label>角色模式</label>
+          <input id="roleModeInput" type="hidden" value="coding">
+          <div class="role-grid" id="roleModeGrid">
+            <button class="role-card" type="button" data-role-mode="daily">
+              <strong>日常陪聊</strong>
+              <span>轻松、短句、适合随手聊想法。</span>
+            </button>
+            <button class="role-card" type="button" data-role-mode="work">
+              <strong>工作拆解</strong>
+              <span>先拆步骤，再给可执行清单。</span>
+            </button>
+            <button class="role-card" type="button" data-role-mode="brainstorm">
+              <strong>发散脑暴</strong>
+              <span>多给方向，先展开再收敛。</span>
+            </button>
+            <button class="role-card" type="button" data-role-mode="coding">
+              <strong>代码小助理</strong>
+              <span>小步修改，快速验证，少做大改。</span>
+            </button>
+            <button class="role-card" type="button" data-role-mode="writing">
+              <strong>文案润色</strong>
+              <span>直接给可复制版本，少讲过程。</span>
+            </button>
+          </div>
+          <small>选择卡片会自动填写下面的默认角色设定；你也可以继续手动改。</small>
+        </div>
+
+        <div class="field">
           <label for="systemPromptInput">默认角色设定</label>
           <textarea class="textarea-input" id="systemPromptInput" rows="4" placeholder="例如：你是我的轻代码助手，回答简洁，优先给可执行方案。"></textarea>
           <small>会作为 system 消息发送给 API，不显示在聊天记录里。</small>
@@ -940,6 +1146,32 @@
         <div class="field">
           <button class="secondary-button" id="exportBackupButton" type="button">导出全部会话备份</button>
           <small>导出 JSON 文件，包含会话和非敏感设置；不会包含 API Key。</small>
+        </div>
+
+        <div class="field">
+          <button class="secondary-button" id="copyDiagnosticsButton" type="button">复制诊断信息</button>
+          <small>复制版本、模型、接口、浏览器和最近错误；不会包含 API Key 或聊天内容。</small>
+        </div>
+
+        <div class="field">
+          <button class="secondary-button" id="copyFeedbackButton" type="button">复制反馈模板</button>
+          <small>复制一份适合发给内测维护者的问题反馈模板，自动附带诊断信息。</small>
+        </div>
+
+        <div class="field">
+          <div class="release-panel">
+            <div class="release-panel-header">
+              <span>内测发布小面板</span>
+              <span class="release-version" id="releaseVersion">v0.5</span>
+            </div>
+            <ul class="release-list" id="releaseChecklist">
+              <li><span>✓</span><span>发布包位置：夜聊Lite-网页发布包/index.html</span></li>
+              <li><span>✓</span><span>API Key 不会写入页面文件或 JSON 备份。</span></li>
+              <li><span>✓</span><span>发给朋友前使用发布包里的 index.html。</span></li>
+              <li><span>✓</span><span>手机端优先用 Safari，电脑端优先用 Chrome。</span></li>
+              <li><span>!</span><span>联网搜索仍是实验功能，国内网络下可能不稳定。</span></li>
+            </ul>
+          </div>
         </div>
 
         <div class="field">
@@ -976,39 +1208,113 @@
       activeSessionId: "lite_ai_chat_active_session_id_v1"
     };
 
-    const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions";
+    const DEFAULT_API_ENDPOINT = "https://api.deepseek.com/v1/chat/completions";
+    const PROVIDER_PRESETS = {
+      deepseek: {
+        label: "DeepSeek",
+        apiEndpoint: "https://api.deepseek.com/v1/chat/completions",
+        model: "deepseek-chat"
+      },
+      qwen: {
+        label: "通义千问",
+        apiEndpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+        model: "qwen-plus"
+      }
+    };
     const APP_INFO = {
       name: "夜聊 Lite",
-      version: "0.2"
+      version: "0.5"
     };
-    const initialSessions = loadSessions();
+    const WEB_SEARCH_PROVIDERS = {
+      duckduckgo: {
+        name: "DuckDuckGo Instant Answer",
+        endpoint: "https://api.duckduckgo.com/"
+      },
+      wikipedia: {
+        name: "Wikipedia",
+        endpoint: "https://zh.wikipedia.org/w/api.php"
+      }
+    };
     const PARAMETER_PRESETS = {
       precise: { label: "精准", temperature: 0.2, maxTokens: 2048 },
       balanced: { label: "均衡", temperature: 0.7, maxTokens: 4096 },
       creative: { label: "发散", temperature: 1.1, maxTokens: 4096 }
     };
+    const ROLE_MODES = {
+      daily: {
+        label: "日常陪聊",
+        prompt: "你是我的日常陪聊助手。回复要自然、温柔、简短，像朋友一样接住我的话；可以适度追问，但不要说教。"
+      },
+      work: {
+        label: "工作拆解",
+        prompt: "你是我的工作拆解助手。先用一句话确认目标，再拆成清晰步骤；优先给行动清单、时间顺序和可立即执行的下一步。"
+      },
+      brainstorm: {
+        label: "发散脑暴",
+        prompt: "你是我的发散脑暴助手。先多给不同方向和可能性，不急着收敛；每个想法保持短小、有画面感，最后给出最值得尝试的 2-3 个方向。"
+      },
+      coding: {
+        label: "代码小助理",
+        prompt: "你是我的轻代码小助理。回答要简洁、清晰，优先给可执行的小步方案；涉及代码时尽量说明修改点和验证方法，避免不必要的大改动。"
+      },
+      writing: {
+        label: "文案润色",
+        prompt: "你是我的文案润色助手。优先直接给可复制的成稿，再简短说明改动思路；语气自然、不浮夸，保留原意并让表达更顺。"
+      }
+    };
+    const QUICK_PROMPTS = [
+      {
+        label: "总结",
+        prompt: "请帮我总结下面内容，保留重点，语言简洁：\n\n"
+      },
+      {
+        label: "三方案",
+        prompt: "请基于下面内容给我 3 个可选方案，并分别说明优点、风险和适合场景：\n\n"
+      },
+      {
+        label: "行动清单",
+        prompt: "请把下面内容拆成可执行的行动清单，按先后顺序排列：\n\n"
+      },
+      {
+        label: "微信润色",
+        prompt: "请把下面内容润色成适合微信发送的自然语气，不要太正式：\n\n"
+      },
+      {
+        label: "先问我",
+        prompt: "在回答前，请先问我 3 个最关键的澄清问题，帮助你更准确地完成这个任务：\n\n"
+      }
+    ];
 
     const defaultSettings = {
       apiKey: "",
+      providerApiKeys: {},
+      provider: "deepseek",
+      apiEndpoint: DEFAULT_API_ENDPOINT,
       model: "deepseek-chat",
       preset: "balanced",
       temperature: 0.7,
       maxTokens: 4096,
       contextLimit: 20,
       theme: "dark",
+      roleMode: "coding",
       systemPrompt: "你是我的轻代码小助理。回答要简洁、清晰，优先给可执行的小步方案；涉及代码时尽量说明修改点和验证方法。",
+      webSearchEnabled: false,
       toolEndpoint: ""
     };
 
+    const initialSettings = loadSettings();
+    const initialSessions = loadSessions(initialSettings);
+
     const state = {
-      settings: loadSettings(),
+      settings: initialSettings,
       sessions: initialSessions,
       activeSessionId: loadActiveSessionId(initialSessions),
       messages: [],
       sessionSearch: "",
       showAllMessages: false,
       isSending: false,
-      abortController: null
+      abortController: null,
+      lastError: null
     };
 
     const els = {
@@ -1017,9 +1323,13 @@
       sidebarBackdrop: document.getElementById("sidebarBackdrop"),
       mobileSidebarButton: document.getElementById("mobileSidebarButton"),
       messages: document.getElementById("messages"),
+      quickPrompts: document.getElementById("quickPrompts"),
       promptInput: document.getElementById("promptInput"),
+      providerSwitch: document.getElementById("providerSwitch"),
       sendButton: document.getElementById("sendButton"),
       stopButton: document.getElementById("stopButton"),
+      webSearchInput: document.getElementById("webSearchInput"),
+      webSearchToggle: document.getElementById("webSearchToggle"),
       statusLine: document.getElementById("statusLine"),
       chatTitle: document.getElementById("chatTitle"),
       settingsButton: document.getElementById("settingsButton"),
@@ -1031,16 +1341,25 @@
       closePreviewButton: document.getElementById("closePreviewButton"),
       settingsForm: document.getElementById("settingsForm"),
       apiKeyInput: document.getElementById("apiKeyInput"),
+      providerInput: document.getElementById("providerInput"),
+      apiEndpointInput: document.getElementById("apiEndpointInput"),
       modelInput: document.getElementById("modelInput"),
       presetInput: document.getElementById("presetInput"),
       temperatureInput: document.getElementById("temperatureInput"),
       maxTokensInput: document.getElementById("maxTokensInput"),
       contextLimitInput: document.getElementById("contextLimitInput"),
       themeInput: document.getElementById("themeInput"),
+      roleModeInput: document.getElementById("roleModeInput"),
+      roleModeGrid: document.getElementById("roleModeGrid"),
       systemPromptInput: document.getElementById("systemPromptInput"),
       toolEndpointInput: document.getElementById("toolEndpointInput"),
+      testConnectionButton: document.getElementById("testConnectionButton"),
+      connectionTestStatus: document.getElementById("connectionTestStatus"),
       forgetKeyButton: document.getElementById("forgetKeyButton"),
       exportBackupButton: document.getElementById("exportBackupButton"),
+      copyDiagnosticsButton: document.getElementById("copyDiagnosticsButton"),
+      copyFeedbackButton: document.getElementById("copyFeedbackButton"),
+      releaseVersion: document.getElementById("releaseVersion"),
       importBackupButton: document.getElementById("importBackupButton"),
       importBackupInput: document.getElementById("importBackupInput"),
       themeButton: document.getElementById("themeButton"),
@@ -1094,9 +1413,12 @@
     function init() {
       syncStateFromActiveSession();
       applyTheme(state.settings.theme);
+      renderQuickPrompts();
+      renderProviderSwitch();
       renderMessages();
       renderSessionList();
       syncSettingsForm();
+      syncWebSearchToggle();
       bindEvents();
       updateStatus();
     }
@@ -1143,12 +1465,30 @@
         if (!actionButton) return;
         handleMessageAction(actionButton.dataset.messageAction, Number(actionButton.dataset.messageIndex));
       });
+      els.quickPrompts.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-quick-prompt]");
+        if (!button) return;
+        applyQuickPrompt(button.dataset.quickPrompt);
+      });
       els.promptInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           handleSend();
         }
       });
+      els.webSearchInput.addEventListener("change", () => {
+        state.settings.webSearchEnabled = els.webSearchInput.checked;
+        saveSettings();
+        syncWebSearchToggle();
+        updateStatus();
+        showToast(state.settings.webSearchEnabled ? "联网搜索已开启" : "联网搜索已关闭");
+      });
+      els.providerSwitch.addEventListener("change", () => {
+        switchProvider(els.providerSwitch.value);
+      });
+      els.providerInput.addEventListener("change", applyProviderPresetToForm);
+      els.apiEndpointInput.addEventListener("input", markProviderCustom);
+      els.modelInput.addEventListener("input", markProviderCustom);
 
       els.settingsButton.addEventListener("click", openSettings);
       els.closeSettingsButton.addEventListener("click", closeSettings);
@@ -1166,18 +1506,32 @@
         saveSettingsFromForm();
       });
 
+      els.roleModeGrid.addEventListener("click", (event) => {
+        const card = event.target.closest("[data-role-mode]");
+        if (!card) return;
+        applyRoleModeToForm(card.dataset.roleMode);
+      });
+      els.systemPromptInput.addEventListener("input", markRoleModeCustom);
       els.presetInput.addEventListener("change", applyPresetToForm);
       els.temperatureInput.addEventListener("input", markPresetCustom);
       els.maxTokensInput.addEventListener("input", markPresetCustom);
+      els.testConnectionButton.addEventListener("click", testCurrentConnection);
 
       els.forgetKeyButton.addEventListener("click", () => {
+        const provider = state.settings.provider || "custom";
         state.settings.apiKey = "";
+        state.settings.providerApiKeys = {
+          ...(state.settings.providerApiKeys || {}),
+          [provider]: ""
+        };
         saveSettings();
         syncSettingsForm();
         showToast("已删除本地 API Key");
       });
 
       els.exportBackupButton.addEventListener("click", exportBackup);
+      els.copyDiagnosticsButton.addEventListener("click", copyDiagnostics);
+      els.copyFeedbackButton.addEventListener("click", copyFeedbackTemplate);
       els.importBackupButton.addEventListener("click", () => els.importBackupInput.click());
       els.importBackupInput.addEventListener("change", handleBackupFileSelected);
 
@@ -1234,7 +1588,7 @@
 
       if (!state.settings.apiKey.trim()) {
         openSettings();
-        showToast("请先在设置里保存 DeepSeek API Key");
+        showToast("请先在设置里保存 API Key");
         return;
       }
 
@@ -1246,19 +1600,32 @@
       renderSessionList();
 
       const assistantIndex = state.messages.length - 1;
-      await generateAssistantReply(assistantIndex);
+      await generateAssistantReply(assistantIndex, "正在连接模型接口...", content);
     }
 
-    async function generateAssistantReply(assistantIndex, statusText = "正在连接 DeepSeek...") {
+    async function generateAssistantReply(assistantIndex, statusText = "正在连接模型接口...", searchQuery = "") {
       setSending(true);
       updateStatus(statusText);
       try {
-        await streamDeepSeekReply(assistantIndex);
+        if (state.settings.webSearchEnabled && searchQuery) {
+          updateStatus("正在联网搜索...");
+          await attachWebSearchContext(assistantIndex, searchQuery);
+          updateStatus("正在连接模型接口...");
+        }
+        await streamModelReply(assistantIndex);
         updateStatus();
       } catch (error) {
         if (error.name === "AbortError") {
           updateAssistantMessage(assistantIndex, "\n\n已停止生成。");
+        } else if (shouldRetryWithoutWebSearch(error, assistantIndex)) {
+          state.messages[assistantIndex].webSearchContext = "";
+          state.messages[assistantIndex].content = "> 联网：已命中来源，但模型接口拒绝联网上下文，已普通重试。\n\n";
+          renderMessages();
+          updateStatus("联网内容被拒绝，正在普通重试...");
+          await streamModelReply(assistantIndex);
+          updateStatus();
         } else {
+          rememberLastError("发送消息", error.message);
           updateAssistantMessage(assistantIndex, `\n\n请求失败：${error.message}`);
           markLastAssistantError();
           showToast(error.message);
@@ -1272,10 +1639,16 @@
       }
     }
 
-    async function streamDeepSeekReply(assistantIndex) {
-      state.abortController = new AbortController();
+    function shouldRetryWithoutWebSearch(error, assistantIndex) {
+      const hasWebSearchContext = Boolean(state.messages[assistantIndex]?.webSearchContext);
+      return hasWebSearchContext && /content exists risk|risk|内容.*风险|风控/i.test(error.message || "");
+    }
 
-      const response = await fetch(DEEPSEEK_ENDPOINT, {
+    async function streamModelReply(assistantIndex) {
+      state.abortController = new AbortController();
+      const apiEndpoint = state.settings.apiEndpoint?.trim() || DEFAULT_API_ENDPOINT;
+
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         signal: state.abortController.signal,
         headers: {
@@ -1293,7 +1666,7 @@
 
       if (!response.ok) {
         const errorText = await readErrorText(response);
-        throw new Error(errorText || `DeepSeek API 返回 HTTP ${response.status}`);
+        throw new Error(errorText || `模型接口返回 HTTP ${response.status}`);
       }
 
       if (!response.body) {
@@ -1349,7 +1722,156 @@
         messages.unshift({ role: "system", content: systemPrompt });
       }
 
+      const webSearchContext = state.messages[assistantIndex]?.webSearchContext;
+      if (webSearchContext) {
+        messages.push({ role: "system", content: webSearchContext });
+      }
+
       return messages;
+    }
+
+    async function attachWebSearchContext(assistantIndex, query) {
+      try {
+        const searchResults = await searchWeb(query);
+        if (searchResults.length === 0) {
+          state.messages[assistantIndex].webSearchContext = "";
+          updateAssistantMessage(assistantIndex, "> 联网：未命中可用来源，已普通回答。\n\n");
+          return;
+        }
+
+        const context = formatWebSearchContext(query, searchResults);
+        state.messages[assistantIndex].webSearchContext = context;
+        updateAssistantMessage(assistantIndex, `> 联网：已命中 ${searchResults.length} 条来源。\n\n`);
+      } catch (error) {
+        rememberLastError("联网搜索", error.message);
+        state.messages[assistantIndex].webSearchContext = "";
+        updateAssistantMessage(assistantIndex, `> 联网：接口失败（${error.message}），已普通回答。\n\n`);
+      }
+    }
+
+    async function searchWeb(query) {
+      const results = await searchDuckDuckGo(query);
+      if (results.length > 0) return results;
+      return searchWikipedia(query);
+    }
+
+    async function searchDuckDuckGo(query) {
+      const params = new URLSearchParams({
+        q: query,
+        format: "json",
+        no_html: "1",
+        skip_disambig: "1"
+      });
+      const data = await fetchJsonp(`${WEB_SEARCH_PROVIDERS.duckduckgo.endpoint}?${params.toString()}`);
+      const results = [];
+
+      if (data.AbstractText) {
+        results.push({
+          title: data.Heading || "搜索摘要",
+          snippet: data.AbstractText,
+          url: data.AbstractURL || data.AbstractSource || ""
+        });
+      }
+
+      collectRelatedTopics(data.RelatedTopics, results);
+      return results
+        .filter((item) => item.snippet)
+        .slice(0, 5);
+    }
+
+    async function searchWikipedia(query) {
+      const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: query,
+        gsrlimit: "3",
+        prop: "extracts|info",
+        exintro: "1",
+        explaintext: "1",
+        inprop: "url",
+        format: "json"
+      });
+      const data = await fetchJsonp(`${WEB_SEARCH_PROVIDERS.wikipedia.endpoint}?${params.toString()}`);
+      const pages = Object.values(data.query?.pages || {});
+
+      return pages
+        .filter((page) => page.extract)
+        .map((page) => ({
+          title: page.title || "Wikipedia 摘要",
+          snippet: page.extract.replace(/\s+/g, " ").trim().slice(0, 480),
+          url: page.fullurl || `https://zh.wikipedia.org/wiki/${encodeURIComponent(page.title || "")}`
+        }))
+        .slice(0, 3);
+    }
+
+    function collectRelatedTopics(topics, results) {
+      if (!Array.isArray(topics)) return;
+
+      topics.forEach((topic) => {
+        if (results.length >= 5) return;
+        if (Array.isArray(topic.Topics)) {
+          collectRelatedTopics(topic.Topics, results);
+          return;
+        }
+        if (!topic.Text) return;
+
+        results.push({
+          title: topic.FirstURL ? getHostName(topic.FirstURL) : "相关结果",
+          snippet: topic.Text,
+          url: topic.FirstURL || ""
+        });
+      });
+    }
+
+    function formatWebSearchContext(query, results) {
+      const items = results.map((result, index) => (
+        `${index + 1}. ${result.title}\n摘要：${result.snippet}\n链接：${result.url || "无"}`
+      )).join("\n\n");
+
+      return [
+        `用户问题：${query}`,
+        `以下是来自 ${Object.values(WEB_SEARCH_PROVIDERS).map((provider) => provider.name).join(" / ")} 的联网搜索结果，请优先基于这些结果回答。`,
+        "如果结果不足以支持结论，请明确说明不确定，不要编造来源。",
+        "回答末尾请列出用到的来源链接。",
+        items
+      ].join("\n\n");
+    }
+
+    function fetchJsonp(url) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `jsonp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        const script = document.createElement("script");
+        const separator = url.includes("?") ? "&" : "?";
+        const timeout = window.setTimeout(() => {
+          cleanup();
+          reject(new Error("搜索接口超时"));
+        }, 10000);
+
+        function cleanup() {
+          window.clearTimeout(timeout);
+          script.remove();
+          delete window[callbackName];
+        }
+
+        window[callbackName] = (data) => {
+          cleanup();
+          resolve(data);
+        };
+        script.onerror = () => {
+          cleanup();
+          reject(new Error("搜索接口不可用"));
+        };
+        script.src = `${url}${separator}callback=${callbackName}`;
+        document.body.appendChild(script);
+      });
+    }
+
+    function getHostName(url) {
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return "相关结果";
+      }
     }
 
     async function readErrorText(response) {
@@ -1365,6 +1887,36 @@
         }
       } catch {
         return "";
+      }
+    }
+
+    function rememberLastError(context, message) {
+      state.lastError = {
+        context,
+        message: String(message || "未知错误").slice(0, 500),
+        time: new Date().toLocaleString("zh-CN")
+      };
+    }
+
+    function sanitizeUrlForDiagnostics(url) {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol === "file:") return "本地文件页面";
+        return `${parsed.origin}${parsed.pathname}`;
+      } catch {
+        return String(url || "").split("?")[0].split("#")[0] || "未知";
+      }
+    }
+
+    function estimateLocalStorageUsage() {
+      try {
+        const total = Object.values(STORAGE_KEYS).reduce((sum, key) => {
+          return sum + (localStorage.getItem(key) || "").length;
+        }, 0);
+        if (total < 1024) return `${total} 字符`;
+        return `${Math.round(total / 102.4) / 10} KB`;
+      } catch {
+        return "无法读取";
       }
     }
 
@@ -1427,7 +1979,7 @@
 
       if (!state.settings.apiKey.trim()) {
         openSettings();
-        showToast("请先在设置里保存 DeepSeek API Key");
+        showToast("请先在设置里保存 API Key");
         return;
       }
 
@@ -1450,7 +2002,11 @@
       saveMessages();
       renderMessages();
       renderSessionList();
-      await generateAssistantReply(messageIndex, "正在重新生成...");
+      const lastUserMessage = [...state.messages]
+        .slice(0, messageIndex)
+        .reverse()
+        .find((item) => item.role === "user" && item.content.trim());
+      await generateAssistantReply(messageIndex, "正在重新生成...", lastUserMessage?.content || "");
     }
 
     async function copyMessage(content) {
@@ -1574,13 +2130,18 @@
         appName: APP_INFO.name,
         appVersion: APP_INFO.version,
         settings: {
+          provider: state.settings.provider,
+          apiEndpoint: state.settings.apiEndpoint,
           model: state.settings.model,
+          providerApiKeys: {},
           preset: state.settings.preset,
           temperature: state.settings.temperature,
           maxTokens: state.settings.maxTokens,
           contextLimit: state.settings.contextLimit,
           theme: state.settings.theme,
+          roleMode: state.settings.roleMode,
           systemPrompt: state.settings.systemPrompt,
+          webSearchEnabled: state.settings.webSearchEnabled,
           toolEndpoint: state.settings.toolEndpoint
         },
         activeSessionId: state.activeSessionId,
@@ -1591,6 +2152,75 @@
       const json = JSON.stringify(backup, null, 2);
       downloadTextFile(`lite-ai-chat-backup-${dateText}.json`, json, "application/json;charset=utf-8");
       showToast("已导出全部会话备份");
+    }
+
+    async function copyDiagnostics() {
+      await copyText(buildDiagnosticsText(), "已复制诊断信息");
+    }
+
+    async function copyFeedbackTemplate() {
+      const feedback = [
+        "夜聊 Lite 内测反馈",
+        "",
+        "我遇到的问题：",
+        "（请简单描述哪里不对，比如发不出去、回复很慢、模型不对、联网失败等）",
+        "",
+        "我当时在做什么：",
+        "（例如：切换到通义千问后发送消息 / 打开设置测试连接 / 开启联网搜索）",
+        "",
+        "是否能复现：",
+        "（能 / 不能 / 不确定）",
+        "",
+        "期望表现：",
+        "（你觉得它本来应该怎么工作）",
+        "",
+        "补充说明：",
+        "（可选，比如截图、设备、网络环境等）",
+        "",
+        "--- 以下为自动诊断信息，请勿删除 ---",
+        buildDiagnosticsText()
+      ].join("\n");
+
+      await copyText(feedback, "已复制反馈模板");
+    }
+
+    function buildDiagnosticsText() {
+      const activeSession = state.sessions.find((session) => session.id === state.activeSessionId);
+      const storageUsage = estimateLocalStorageUsage();
+      return [
+        "夜聊 Lite 诊断信息",
+        `生成时间：${new Date().toLocaleString("zh-CN")}`,
+        `应用版本：${APP_INFO.version}`,
+        `页面地址：${sanitizeUrlForDiagnostics(location.href)}`,
+        "",
+        "模型设置",
+        `服务商：${getProviderLabelFromSettings(state.settings)}`,
+        `模型：${state.settings.model || defaultSettings.model}`,
+        `接口：${sanitizeUrlForDiagnostics(state.settings.apiEndpoint)}`,
+        `API Key：${state.settings.apiKey ? "已填写（内容未复制）" : "未填写"}`,
+        `参数预设：${PARAMETER_PRESETS[state.settings.preset]?.label || "自定义"}`,
+        `Temperature：${state.settings.temperature}`,
+        `Max Tokens：${state.settings.maxTokens}`,
+        `最近消息数：${state.settings.contextLimit}`,
+        `联网搜索：${state.settings.webSearchEnabled ? "开启" : "关闭"}`,
+        "",
+        "会话状态",
+        `会话数量：${state.sessions.length}`,
+        `当前会话标题：${activeSession ? getSessionTitle(activeSession) : "无"}`,
+        `当前会话消息数：${state.messages.length}`,
+        `当前是否生成中：${state.isSending ? "是" : "否"}`,
+        "",
+        "本地环境",
+        `主题：${state.settings.theme}`,
+        `角色模式：${ROLE_MODES[state.settings.roleMode]?.label || "自定义"}`,
+        `localStorage 估算占用：${storageUsage}`,
+        `浏览器：${navigator.userAgent}`,
+        "",
+        "最近错误",
+        state.lastError
+          ? `${state.lastError.time} · ${state.lastError.context} · ${state.lastError.message}`
+          : "无记录"
+      ].join("\n");
     }
 
     async function handleBackupFileSelected(event) {
@@ -1612,7 +2242,9 @@
         throw new Error("这不是有效的轻量 AI 对话备份");
       }
 
-      const sessions = backup.sessions.map(normalizeSession).filter(Boolean);
+      const sessions = backup.sessions
+        .map((session) => normalizeSession(session, state.settings))
+        .filter(Boolean);
       if (sessions.length === 0) {
         throw new Error("备份里没有可恢复的会话");
       }
@@ -1647,14 +2279,21 @@
     }
 
     function sanitizeBackupSettings(settings = {}) {
+      const apiEndpoint = normalizeApiEndpoint(settings.apiEndpoint);
+      const provider = PROVIDER_PRESETS[settings.provider] ? settings.provider : inferProvider(apiEndpoint);
       return {
         model: typeof settings.model === "string" && settings.model ? settings.model : defaultSettings.model,
+        provider,
+        providerApiKeys: {},
+        apiEndpoint,
         preset: PARAMETER_PRESETS[settings.preset] ? settings.preset : "custom",
         temperature: clampNumber(settings.temperature, 0, 2, defaultSettings.temperature),
         maxTokens: clampNumber(settings.maxTokens, 256, 8192, defaultSettings.maxTokens),
         contextLimit: clampNumber(settings.contextLimit, 2, 100, defaultSettings.contextLimit),
         theme: settings.theme === "light" ? "light" : "dark",
+        roleMode: ROLE_MODES[settings.roleMode] ? settings.roleMode : inferRoleMode(settings.systemPrompt),
         systemPrompt: typeof settings.systemPrompt === "string" ? settings.systemPrompt : defaultSettings.systemPrompt,
+        webSearchEnabled: settings.webSearchEnabled === true,
         toolEndpoint: typeof settings.toolEndpoint === "string" ? settings.toolEndpoint : ""
       };
     }
@@ -1704,6 +2343,67 @@
 
       document.querySelectorAll(".bubble").forEach(highlightBubble);
       scrollToBottom();
+    }
+
+    function renderQuickPrompts() {
+      els.quickPrompts.innerHTML = QUICK_PROMPTS.map((item, index) => (
+        `<button class="quick-prompt-button" type="button" data-quick-prompt="${index}">${escapeHtml(item.label)}</button>`
+      )).join("");
+    }
+
+    function renderProviderSwitch() {
+      els.providerSwitch.innerHTML = Object.entries(PROVIDER_PRESETS).map(([key, provider]) => (
+        `<option value="${key}">${escapeHtml(provider.label)}</option>`
+      )).join("") + `<option value="custom">自定义</option>`;
+      syncProviderSwitch();
+    }
+
+    function syncProviderSwitch() {
+      els.providerSwitch.value = state.settings.provider || "custom";
+    }
+
+    function switchProvider(providerKey) {
+      if (state.isSending) {
+        syncProviderSwitch();
+        showToast("回复生成中，稍后再切换模型");
+        return;
+      }
+
+      const currentProvider = state.settings.provider || "custom";
+      state.settings.providerApiKeys = {
+        ...(state.settings.providerApiKeys || {}),
+        [currentProvider]: state.settings.apiKey || ""
+      };
+
+      const preset = PROVIDER_PRESETS[providerKey];
+      if (preset) {
+        state.settings.provider = providerKey;
+        state.settings.apiEndpoint = preset.apiEndpoint;
+        state.settings.model = preset.model;
+        state.settings.apiKey = state.settings.providerApiKeys[providerKey] || "";
+      } else {
+        state.settings.provider = "custom";
+        state.settings.apiKey = state.settings.providerApiKeys.custom || state.settings.apiKey || "";
+      }
+
+      saveSettings();
+      syncActiveSession();
+      saveSessions();
+      syncSettingsForm();
+      updateStatus();
+      showToast(`${getProviderLabel()} 已切换`);
+      if (!state.settings.apiKey) openSettings();
+    }
+
+    function applyQuickPrompt(index) {
+      const item = QUICK_PROMPTS[Number(index)];
+      if (!item) return;
+
+      const currentText = els.promptInput.value.trim();
+      els.promptInput.value = currentText ? `${item.prompt}${currentText}` : item.prompt;
+      els.promptInput.focus();
+      els.promptInput.setSelectionRange(els.promptInput.value.length, els.promptInput.value.length);
+      showToast(`已填入：${item.label}`);
     }
 
     function getVisibleMessages() {
@@ -1830,7 +2530,7 @@
     }
 
     function createNewSession() {
-      const session = createSession();
+      const session = createSession([], state.settings);
       state.sessions.unshift(session);
       state.activeSessionId = session.id;
       state.messages = session.messages;
@@ -1872,7 +2572,7 @@
       state.sessions = state.sessions.filter((item) => item.id !== sessionId);
 
       if (state.sessions.length === 0) {
-        state.sessions = [createSession()];
+        state.sessions = [createSession([], state.settings)];
       }
 
       if (state.activeSessionId === sessionId) {
@@ -1912,14 +2612,32 @@
     function syncStateFromActiveSession() {
       let activeSession = state.sessions.find((session) => session.id === state.activeSessionId);
       if (!activeSession) {
-        activeSession = state.sessions[0] || createSession();
+        activeSession = state.sessions[0] || createSession([], state.settings);
         state.sessions = [activeSession, ...state.sessions.filter((session) => session.id !== activeSession.id)];
         state.activeSessionId = activeSession.id;
         saveSessions();
       }
 
       state.messages = activeSession.messages;
+
+      // 切换会话时恢复这个会话上次使用的模型；API Key 仍然只从本地设置读取。
+      const previousProvider = state.settings.provider || "custom";
+      const providerApiKeys = {
+        ...(state.settings.providerApiKeys || {}),
+        [previousProvider]: state.settings.apiKey || state.settings.providerApiKeys?.[previousProvider] || ""
+      };
+      const modelConfig = normalizeSessionModelConfig(activeSession.modelConfig || activeSession, state.settings);
+      state.settings = {
+        ...state.settings,
+        ...modelConfig,
+        providerApiKeys,
+        apiKey: providerApiKeys[modelConfig.provider] || ""
+      };
+      activeSession.modelConfig = modelConfig;
+
       saveActiveSessionId();
+      syncProviderSwitch();
+      syncSettingsForm();
     }
 
     function syncActiveSession() {
@@ -1927,6 +2645,7 @@
       if (!session) return;
 
       session.messages = state.messages;
+      session.modelConfig = getCurrentSessionModelConfig();
       session.updatedAt = new Date().toISOString();
       if (!session.customTitle) {
         session.title = getSessionTitle(session);
@@ -1935,6 +2654,7 @@
 
     function openSettings() {
       syncSettingsForm();
+      syncReleasePanel();
       els.settingsModal.classList.add("open");
       els.apiKeyInput.focus();
     }
@@ -1944,37 +2664,153 @@
     }
 
     function syncSettingsForm() {
-      els.apiKeyInput.value = state.settings.apiKey;
+      els.apiKeyInput.value = state.settings.apiKey || state.settings.providerApiKeys?.[state.settings.provider] || "";
+      els.providerInput.value = state.settings.provider || inferProvider(state.settings.apiEndpoint);
+      els.apiEndpointInput.value = state.settings.apiEndpoint || DEFAULT_API_ENDPOINT;
       els.modelInput.value = state.settings.model;
       els.presetInput.value = state.settings.preset || "custom";
       els.temperatureInput.value = state.settings.temperature;
       els.maxTokensInput.value = state.settings.maxTokens;
       els.contextLimitInput.value = state.settings.contextLimit;
       els.themeInput.value = state.settings.theme;
+      els.roleModeInput.value = state.settings.roleMode || inferRoleMode(state.settings.systemPrompt);
       els.systemPromptInput.value = state.settings.systemPrompt;
       els.toolEndpointInput.value = state.settings.toolEndpoint;
+      updateRoleModeCards();
+      syncReleasePanel();
+    }
+
+    function syncReleasePanel() {
+      if (els.releaseVersion) {
+        els.releaseVersion.textContent = `v${APP_INFO.version}`;
+      }
     }
 
     function saveSettingsFromForm() {
-      state.settings = {
+      state.settings = readSettingsFromForm();
+
+      applyTheme(state.settings.theme);
+      syncProviderSwitch();
+      syncWebSearchToggle();
+      saveSettings();
+      syncActiveSession();
+      saveSessions();
+      updateStatus();
+      state.showAllMessages = false;
+      renderMessages();
+      closeSettings();
+      showToast("设置已保存");
+    }
+
+    function readSettingsFromForm() {
+      const provider = PROVIDER_PRESETS[els.providerInput.value] ? els.providerInput.value : "custom";
+      const providerApiKeys = {
+        ...(state.settings.providerApiKeys || {}),
+        [provider]: els.apiKeyInput.value.trim()
+      };
+      return {
         apiKey: els.apiKeyInput.value.trim(),
+        providerApiKeys,
+        provider,
+        apiEndpoint: normalizeApiEndpoint(els.apiEndpointInput.value),
         model: els.modelInput.value.trim() || defaultSettings.model,
         preset: PARAMETER_PRESETS[els.presetInput.value] ? els.presetInput.value : "custom",
         temperature: clampNumber(els.temperatureInput.value, 0, 2, defaultSettings.temperature),
         maxTokens: clampNumber(els.maxTokensInput.value, 256, 8192, defaultSettings.maxTokens),
         contextLimit: clampNumber(els.contextLimitInput.value, 2, 100, defaultSettings.contextLimit),
         theme: els.themeInput.value === "light" ? "light" : "dark",
+        roleMode: ROLE_MODES[els.roleModeInput.value] ? els.roleModeInput.value : "custom",
         systemPrompt: els.systemPromptInput.value.trim(),
+        webSearchEnabled: state.settings.webSearchEnabled === true,
         toolEndpoint: els.toolEndpointInput.value.trim()
       };
+    }
 
-      applyTheme(state.settings.theme);
-      saveSettings();
-      updateStatus();
-      state.showAllMessages = false;
-      renderMessages();
-      closeSettings();
-      showToast("设置已保存");
+    async function testCurrentConnection() {
+      const draftSettings = readSettingsFromForm();
+      const providerLabel = getProviderLabelFromSettings(draftSettings);
+
+      if (!draftSettings.apiKey) {
+        els.connectionTestStatus.textContent = "请先填写当前模型的 API Key。";
+        showToast("请先填写 API Key");
+        return;
+      }
+
+      els.testConnectionButton.disabled = true;
+      els.connectionTestStatus.textContent = `正在测试 ${providerLabel} · ${draftSettings.model}...`;
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+
+      try {
+        const response = await fetch(draftSettings.apiEndpoint, {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${draftSettings.apiKey}`
+          },
+          body: JSON.stringify({
+            model: draftSettings.model,
+            messages: [{ role: "user", content: "请只回复 OK" }],
+            stream: false,
+            max_tokens: 16,
+            temperature: 0
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await readErrorText(response);
+          throw new Error(errorText || `接口返回 HTTP ${response.status}`);
+        }
+
+        state.lastError = null;
+        els.connectionTestStatus.textContent = `连接成功：${providerLabel} · ${draftSettings.model} 可用。`;
+        showToast("模型连接测试成功");
+      } catch (error) {
+        const message = error.name === "AbortError" ? "测试超时，请检查网络或接口地址" : error.message;
+        rememberLastError("连接测试", message);
+        els.connectionTestStatus.textContent = `连接失败：${message}`;
+        showToast("模型连接测试失败");
+      } finally {
+        window.clearTimeout(timeoutId);
+        els.testConnectionButton.disabled = false;
+      }
+    }
+
+    function applyProviderPresetToForm() {
+      const provider = PROVIDER_PRESETS[els.providerInput.value];
+      if (!provider) return;
+
+      els.apiEndpointInput.value = provider.apiEndpoint;
+      els.modelInput.value = provider.model;
+      els.apiKeyInput.value = state.settings.providerApiKeys?.[els.providerInput.value] || "";
+    }
+
+    function markProviderCustom() {
+      const provider = inferProvider(els.apiEndpointInput.value, els.modelInput.value);
+      els.providerInput.value = provider;
+    }
+
+    function applyRoleModeToForm(mode) {
+      const roleMode = ROLE_MODES[mode];
+      if (!roleMode) return;
+
+      els.roleModeInput.value = mode;
+      els.systemPromptInput.value = roleMode.prompt;
+      updateRoleModeCards();
+    }
+
+    function markRoleModeCustom() {
+      els.roleModeInput.value = inferRoleMode(els.systemPromptInput.value);
+      updateRoleModeCards();
+    }
+
+    function updateRoleModeCards() {
+      const mode = els.roleModeInput.value;
+      els.roleModeGrid.querySelectorAll("[data-role-mode]").forEach((card) => {
+        card.classList.toggle("active", card.dataset.roleMode === mode);
+      });
     }
 
     function applyPresetToForm() {
@@ -2000,6 +2836,11 @@
       document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
     }
 
+    function syncWebSearchToggle() {
+      els.webSearchInput.checked = state.settings.webSearchEnabled === true;
+      els.webSearchToggle.classList.toggle("active", els.webSearchInput.checked);
+    }
+
     function updateStatus(customText) {
       if (customText) {
         els.statusLine.textContent = customText;
@@ -2007,9 +2848,21 @@
       }
 
       const keyStatus = state.settings.apiKey ? "API Key 已保存" : "未设置 API Key";
-      const promptStatus = state.settings.systemPrompt ? "角色设定已启用" : "未设角色";
+      const roleLabel = ROLE_MODES[state.settings.roleMode]?.label || (state.settings.systemPrompt ? "自定义角色" : "未设角色");
       const presetLabel = PARAMETER_PRESETS[state.settings.preset]?.label || "自定义";
-      els.statusLine.textContent = `${state.settings.model || defaultSettings.model} · ${presetLabel} · ${keyStatus} · ${promptStatus} · 最近 ${state.settings.contextLimit} 条`;
+      const searchStatus = state.settings.webSearchEnabled ? "联网开" : "联网关";
+      const providerLabel = getProviderLabel(state.settings.apiEndpoint);
+      els.statusLine.textContent = `${providerLabel} · ${state.settings.model || defaultSettings.model} · ${presetLabel} · ${keyStatus} · ${roleLabel} · ${searchStatus} · 最近 ${state.settings.contextLimit} 条`;
+    }
+
+    function getProviderLabel(apiEndpoint) {
+      return getProviderLabelFromSettings(state.settings);
+    }
+
+    function getProviderLabelFromSettings(settings) {
+      const provider = PROVIDER_PRESETS[settings.provider];
+      if (provider) return provider.label;
+      return "自定义接口";
     }
 
     function showToast(message) {
@@ -2035,10 +2888,23 @@
     }
 
     function normalizeSettings(settings) {
-      if (PARAMETER_PRESETS[settings.preset]) return settings;
-      return {
+      const apiEndpoint = normalizeApiEndpoint(settings.apiEndpoint);
+      const provider = PROVIDER_PRESETS[settings.provider] ? settings.provider : inferProvider(apiEndpoint, settings.model);
+      const providerApiKeys = {
+        ...(settings.providerApiKeys || {}),
+        [provider]: settings.apiKey || settings.providerApiKeys?.[provider] || ""
+      };
+      const nextSettings = {
         ...settings,
-        preset: inferPreset(settings.temperature, settings.maxTokens)
+        provider,
+        providerApiKeys,
+        apiEndpoint,
+        roleMode: ROLE_MODES[settings.roleMode] ? settings.roleMode : inferRoleMode(settings.systemPrompt)
+      };
+      if (PARAMETER_PRESETS[nextSettings.preset]) return nextSettings;
+      return {
+        ...nextSettings,
+        preset: inferPreset(nextSettings.temperature, nextSettings.maxTokens)
       };
     }
 
@@ -2047,6 +2913,28 @@
         Number(temperature) === preset.temperature && Number(maxTokens) === preset.maxTokens
       ));
       return matched?.[0] || "custom";
+    }
+
+    function inferRoleMode(systemPrompt) {
+      const prompt = String(systemPrompt || "").trim();
+      const matched = Object.entries(ROLE_MODES).find(([, mode]) => mode.prompt === prompt);
+      return matched?.[0] || "custom";
+    }
+
+    function inferProvider(apiEndpoint, model = "") {
+      const endpoint = normalizeApiEndpoint(apiEndpoint);
+      const matched = Object.entries(PROVIDER_PRESETS).find(([, provider]) => (
+        normalizeApiEndpoint(provider.apiEndpoint) === endpoint
+        && (!model || provider.model === model)
+      ));
+      return matched?.[0] || "custom";
+    }
+
+    function normalizeApiEndpoint(value) {
+      const endpoint = String(value || "").trim();
+      if (!endpoint) return DEFAULT_API_ENDPOINT;
+      if (endpoint.endsWith("/chat/completions")) return endpoint;
+      return endpoint.replace(/\/+$/, "") + "/chat/completions";
     }
 
     function saveSettings() {
@@ -2068,18 +2956,18 @@
       safeLocalStorageSet(STORAGE_KEYS.messages, state.messages, "对话保存失败，可能是浏览器存储空间不足");
     }
 
-    function loadSessions() {
+    function loadSessions(fallbackSettings = defaultSettings) {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.sessions) || "[]");
         if (Array.isArray(saved) && saved.length > 0) {
-          return saved.map(normalizeSession).filter(Boolean);
+          return saved.map((session) => normalizeSession(session, fallbackSettings)).filter(Boolean);
         }
       } catch {
         // 读取失败时继续尝试旧版单会话数据。
       }
 
       const oldMessages = loadMessages();
-      return [createSession(oldMessages)];
+      return [createSession(oldMessages, fallbackSettings)];
     }
 
     function saveSessions() {
@@ -2097,13 +2985,14 @@
       safeLocalStorageSet(STORAGE_KEYS.activeSessionId, state.activeSessionId, "当前会话保存失败");
     }
 
-    function createSession(messages = []) {
+    function createSession(messages = [], settings = defaultSettings) {
       const now = new Date().toISOString();
       const session = {
         id: createId(),
         title: "新对话",
         customTitle: false,
         messages: messages.filter(isValidMessage),
+        modelConfig: getSessionModelConfigFromSettings(settings),
         createdAt: now,
         updatedAt: now
       };
@@ -2111,20 +3000,52 @@
       return session;
     }
 
-    function normalizeSession(session) {
+    function normalizeSession(session, fallbackSettings = defaultSettings) {
       if (!session || typeof session !== "object") return null;
 
       const messages = Array.isArray(session.messages)
         ? session.messages.filter(isValidMessage)
         : [];
+      const modelConfig = normalizeSessionModelConfig(session.modelConfig || session, fallbackSettings);
 
       return {
         id: typeof session.id === "string" && session.id ? session.id : createId(),
         title: typeof session.title === "string" && session.title ? session.title : getSessionTitle({ messages }),
         customTitle: Boolean(session.customTitle),
         messages,
+        modelConfig,
         createdAt: session.createdAt || new Date().toISOString(),
         updatedAt: session.updatedAt || new Date().toISOString()
+      };
+    }
+
+    function getCurrentSessionModelConfig() {
+      return getSessionModelConfigFromSettings(state.settings);
+    }
+
+    function getSessionModelConfigFromSettings(settings = defaultSettings) {
+      return normalizeSessionModelConfig({
+        provider: settings.provider,
+        apiEndpoint: settings.apiEndpoint,
+        model: settings.model
+      }, settings);
+    }
+
+    function normalizeSessionModelConfig(config = {}, fallbackSettings = defaultSettings) {
+      const fallbackEndpoint = fallbackSettings.apiEndpoint || DEFAULT_API_ENDPOINT;
+      const apiEndpoint = normalizeApiEndpoint(config.apiEndpoint || fallbackEndpoint);
+      const fallbackModel = fallbackSettings.model || defaultSettings.model;
+      const provider = PROVIDER_PRESETS[config.provider]
+        ? config.provider
+        : inferProvider(apiEndpoint, config.model || fallbackModel);
+      const providerPreset = PROVIDER_PRESETS[provider];
+
+      return {
+        provider,
+        apiEndpoint,
+        model: typeof config.model === "string" && config.model.trim()
+          ? config.model.trim()
+          : providerPreset?.model || fallbackModel
       };
     }
 
